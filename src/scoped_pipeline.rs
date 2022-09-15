@@ -117,6 +117,7 @@ where
     }
 }
 
+/// ScopedPipelineMap can be imported to add the scoped_plmap function to iterators.
 #[rustversion::since(1.63)]
 pub trait ScopedPipelineMap<'scope, 'env, I, M>
 where
@@ -133,7 +134,6 @@ where
     ) -> ScopedPipeline<'scope, 'env, I, M>;
 }
 
-/// ScopedPipelineMap can be imported to add the scoped_plmap function to iterators.
 #[rustversion::since(1.63)]
 impl<'scope, 'env, I, M> ScopedPipelineMap<'scope, 'env, I, M> for I
 where
