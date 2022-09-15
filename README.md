@@ -2,7 +2,12 @@
 
 Parallel pipelined map over iterators for rust.
 
-# Example
+
+## Documentation
+
+[docs.rs/plmap](https://docs.rs/plmap/)
+
+## Example
 
 ```
 // Import the iterator extension trait.
