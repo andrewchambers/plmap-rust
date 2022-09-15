@@ -8,9 +8,9 @@ use {
 pub struct ScopedPipeline<'scope, 'env, I, M>
 where
     I: Iterator,
-    <I as Iterator>::Item: Send + 'env,
+    I::Item: Send + 'env,
     M: Mapper<I::Item> + Clone + Send + 'env,
-    <M as Mapper<I::Item>>::Out: Send + 'env,
+    M::Out: Send + 'env,
 {
     mapper: M,
     input: I,
@@ -24,9 +24,9 @@ where
 impl<'scope, 'env, I, M> ScopedPipeline<'scope, 'env, I, M>
 where
     I: Iterator,
-    <I as Iterator>::Item: Send + 'env,
+    I::Item: Send + 'env,
     M: Mapper<I::Item> + Clone + Send + 'env,
-    <M as Mapper<I::Item>>::Out: Send + 'env,
+    M::Out: Send + 'env,
 {
     pub fn new(
         worker_scope: &'scope thread::Scope<'scope, 'env>,
@@ -71,9 +71,9 @@ where
 impl<'scope, 'env, I, M> Drop for ScopedPipeline<'scope, 'env, I, M>
 where
     I: Iterator,
-    <I as Iterator>::Item: Send + 'env,
+    I::Item: Send + 'env,
     M: Mapper<I::Item> + Clone + Send + 'env,
-    <M as Mapper<I::Item>>::Out: Send + 'env,
+    M::Out: Send + 'env,
 {
     fn drop(&mut self) {
         let (dummy, _) = crossbeam_channel::bounded(1);
@@ -88,9 +88,9 @@ where
 impl<'scope, 'env, I, M> Iterator for ScopedPipeline<'scope, 'env, I, M>
 where
     I: Iterator,
-    <I as Iterator>::Item: Send + 'env,
+    I::Item: Send + 'env,
     M: Mapper<I::Item> + Clone + Send + 'env,
-    <M as Mapper<I::Item>>::Out: Send + 'env,
+    M::Out: Send + 'env,
 {
     type Item = <M as Mapper<I::Item>>::Out;
 
@@ -121,9 +121,9 @@ where
 pub trait ScopedPipelineMap<'scope, 'env, I, M>
 where
     I: Iterator,
-    <I as Iterator>::Item: Send + 'env,
+    I::Item: Send + 'env,
     M: Mapper<I::Item> + Clone + Send + 'env,
-    <M as Mapper<I::Item>>::Out: Send + 'env,
+    M::Out: Send + 'env,
 {
     fn scoped_plmap(
         self,
@@ -137,9 +137,9 @@ where
 impl<'scope, 'env, I, M> ScopedPipelineMap<'scope, 'env, I, M> for I
 where
     I: Iterator,
-    <I as Iterator>::Item: Send + 'env,
+    I::Item: Send + 'env,
     M: Mapper<I::Item> + Clone + Send + 'env,
-    <M as Mapper<I::Item>>::Out: Send + 'env,
+    M::Out: Send + 'env,
 {
     fn scoped_plmap(
         self,

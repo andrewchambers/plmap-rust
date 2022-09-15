@@ -6,9 +6,9 @@ use {
 pub struct Pipeline<I, M>
 where
     I: Iterator,
-    <I as Iterator>::Item: Send + 'static,
+    I::Item: Send + 'static,
     M: Mapper<I::Item> + Clone + Send + 'static,
-    <M as Mapper<I::Item>>::Out: Send + 'static,
+    M::Out: Send + 'static,
 {
     mapper: M,
     input: I,
@@ -20,9 +20,9 @@ where
 impl<I, M> Pipeline<I, M>
 where
     I: Iterator,
-    <I as Iterator>::Item: Send + 'static,
+    I::Item: Send + 'static,
     M: Mapper<I::Item> + Clone + Send + 'static,
-    <M as Mapper<I::Item>>::Out: Send + 'static,
+    M::Out: Send + 'static,
 {
     pub fn new(n_workers: usize, mapper: M, input: I) -> Pipeline<I, M> {
         let (dispatch, dispatch_rx): (
@@ -59,9 +59,9 @@ where
 impl<I, M> Drop for Pipeline<I, M>
 where
     I: Iterator,
-    <I as Iterator>::Item: Send + 'static,
+    I::Item: Send + 'static,
     M: Mapper<I::Item> + Clone + Send + 'static,
-    <M as Mapper<I::Item>>::Out: Send + 'static,
+    M::Out: Send + 'static,
 {
     fn drop(&mut self) {
         let (dummy, _) = crossbeam_channel::bounded(1);
@@ -75,9 +75,9 @@ where
 impl<I, M> Iterator for Pipeline<I, M>
 where
     I: Iterator,
-    <I as Iterator>::Item: Send + 'static,
+    I::Item: Send + 'static,
     M: Mapper<I::Item> + Clone + Send + 'static,
-    <M as Mapper<I::Item>>::Out: Send + 'static,
+    M::Out: Send + 'static,
 {
     type Item = <M as Mapper<I::Item>>::Out;
 
@@ -107,9 +107,9 @@ where
 pub trait PipelineMap<I, M>
 where
     I: Iterator,
-    <I as Iterator>::Item: Send + 'static,
+    I::Item: Send + 'static,
     M: Mapper<I::Item> + Clone + Send + 'static,
-    <M as Mapper<I::Item>>::Out: Send + 'static,
+    M::Out: Send + 'static,
 {
     fn plmap(self, n_workers: usize, m: M) -> Pipeline<I, M>;
 }
