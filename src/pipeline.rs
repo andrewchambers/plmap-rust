@@ -9,6 +9,7 @@ where
     M: Mapper<I::Item> + Clone + Send + 'static,
     <M as Mapper<I::Item>>::Out: Send + 'static,
 {
+    mapper: M,
     input: I,
     queue: VecDeque<crossbeam_channel::Receiver<M::Out>>,
     dispatch: crossbeam_channel::Sender<(I::Item, crossbeam_channel::Sender<M::Out>)>,
@@ -22,8 +23,7 @@ where
     M: Mapper<I::Item> + Clone + Send + 'static,
     <M as Mapper<I::Item>>::Out: Send + 'static,
 {
-    pub fn new(n_workers: usize, m: M, input: I) -> Pipeline<I, M> {
-        let n_workers = n_workers.min(1);
+    pub fn new(n_workers: usize, mapper: M, input: I) -> Pipeline<I, M> {
         let (dispatch, dispatch_rx): (
             crossbeam_channel::Sender<(I::Item, crossbeam_channel::Sender<M::Out>)>,
             _,
@@ -31,12 +31,12 @@ where
         let mut workers = Vec::with_capacity(n_workers);
 
         for _ in 0..n_workers {
-            let mut m = m.clone();
+            let mut mapper = mapper.clone();
             let dispatch_rx = dispatch_rx.clone();
             let handle = thread::spawn(move || loop {
                 match dispatch_rx.recv() {
                     Ok((in_val, respond)) => {
-                        let out_val = m.apply(in_val);
+                        let out_val = mapper.apply(in_val);
                         respond.send(out_val).unwrap();
                     }
                     Err(_) => break,
@@ -46,6 +46,7 @@ where
         }
 
         Pipeline {
+            mapper,
             input,
             dispatch,
             workers,
@@ -80,6 +81,10 @@ where
     type Item = <M as Mapper<I::Item>>::Out;
 
     fn next(&mut self) -> Option<Self::Item> {
+        if self.workers.is_empty() {
+            return self.input.next().map(|v| self.mapper.apply(v));
+        }
+
         while self.queue.len() < self.workers.len() {
             match self.input.next() {
                 Some(v) => {
@@ -126,10 +131,12 @@ mod tests {
 
     #[test]
     fn test_parallel_pipeline() {
-        for (i, v) in (0..100).plmap(5, |x| x * 2).enumerate() {
-            let i = i as i32;
-            assert_eq!(i * 2, v)
+        for w in 0..3 {
+            for (i, v) in (0..100).plmap(w, |x| x * 2).enumerate() {
+                let i = i as i32;
+                assert_eq!(i * 2, v)
+            }
+            assert_eq!((0..100).plmap(w, |x| x * 2).count(), 100);
         }
-        assert_eq!((0..100).plmap(2, |x| x * 2).count(), 100);
     }
 }

@@ -2,7 +2,6 @@
 
 Parallel pipelined map over iterators for rust.
 
-
 ## Documentation
 
 [docs.rs/plmap](https://docs.rs/plmap/)

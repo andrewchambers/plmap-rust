@@ -12,6 +12,7 @@ where
     M: Mapper<I::Item> + Clone + Send + 'env,
     <M as Mapper<I::Item>>::Out: Send + 'env,
 {
+    mapper: M,
     input: I,
     queue: VecDeque<crossbeam_channel::Receiver<M::Out>>,
     dispatch: crossbeam_channel::Sender<(I::Item, crossbeam_channel::Sender<M::Out>)>,
@@ -30,7 +31,7 @@ where
     pub fn new(
         worker_scope: &'scope thread::Scope<'scope, 'env>,
         n_workers: usize,
-        m: M,
+        mapper: M,
         input: I,
     ) -> ScopedPipeline<'scope, 'env, I, M> {
         let n_workers = n_workers.min(1);
@@ -41,12 +42,12 @@ where
         let mut workers = Vec::with_capacity(n_workers);
 
         for _ in 0..n_workers {
-            let mut m = m.clone();
+            let mut mapper = mapper.clone();
             let dispatch_rx = dispatch_rx.clone();
             let handle = worker_scope.spawn(move || loop {
                 match dispatch_rx.recv() {
                     Ok((in_val, respond)) => {
-                        let out_val = m.apply(in_val);
+                        let out_val = mapper.apply(in_val);
                         respond.send(out_val).unwrap();
                     }
                     Err(_) => break,
@@ -56,6 +57,7 @@ where
         }
 
         ScopedPipeline {
+            mapper,
             input,
             dispatch,
             workers,
@@ -93,6 +95,10 @@ where
     type Item = <M as Mapper<I::Item>>::Out;
 
     fn next(&mut self) -> Option<Self::Item> {
+        if self.workers.is_empty() {
+            return self.input.next().map(|v| self.mapper.apply(v));
+        }
+
         while self.queue.len() < self.workers.len() {
             match self.input.next() {
                 Some(v) => {
@@ -153,11 +159,13 @@ mod tests {
     #[test]
     fn test_scoped_parallel_pipeline() {
         thread::scope(|s| {
-            for (i, v) in (0..100).scoped_plmap(s, 5, |x| x * 2).enumerate() {
-                let i = i as i32;
-                assert_eq!(i * 2, v)
+            for w in 0..3 {
+                for (i, v) in (0..100).scoped_plmap(s, w, |x| x * 2).enumerate() {
+                    let i = i as i32;
+                    assert_eq!(i * 2, v)
+                }
+                assert_eq!((0..100).scoped_plmap(s, w, |x| x * 2).count(), 100);
             }
-            assert_eq!((0..100).scoped_plmap(s, 2, |x| x * 2).count(), 100);
         })
     }
 }
