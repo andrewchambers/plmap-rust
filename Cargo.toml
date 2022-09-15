@@ -3,6 +3,7 @@ name = "plmap"
 version = "1.0.0"
 edition = "2018"
 readme = "README.md"
+license = "MIT"
 authors = ["Andrew Chambers <ac@acha.ninja>"]
 description = "Parallel pipelined map over iterators."
 repository = "https://github.com/andrewchambers/plmap-rust"
