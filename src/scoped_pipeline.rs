@@ -42,7 +42,7 @@ where
     ) -> ScopedPipeline<'scope, 'env, I, M> {
         let n_workers = n_workers.min(1);
         let (dispatch, dispatch_rx): (
-            crossbeam_channel::Sender<(I::Item, crossbeam_channel::Sender<M::Out>)>,
+            crossbeam_channel::Sender<(_, crossbeam_channel::Sender<M::Out>)>,
             _,
         ) = crossbeam_channel::bounded(0);
         let mut workers = Vec::with_capacity(n_workers);
@@ -50,13 +50,10 @@ where
         for _ in 0..n_workers {
             let mut mapper = mapper.clone();
             let dispatch_rx = dispatch_rx.clone();
-            let handle = worker_scope.spawn(move || loop {
-                match dispatch_rx.recv() {
-                    Ok((in_val, respond)) => {
-                        let out_val = mapper.apply(in_val);
-                        respond.send(out_val).unwrap();
-                    }
-                    Err(_) => break,
+            let handle = worker_scope.spawn(move || {
+                while let Ok((in_val, respond)) = dispatch_rx.recv() {
+                    let out_val = mapper.apply(in_val);
+                    respond.send(out_val).unwrap();
                 }
             });
             workers.push(handle)
@@ -116,10 +113,7 @@ where
             }
         }
 
-        match self.queue.pop_front() {
-            Some(rx) => Some(rx.recv().unwrap()),
-            None => None,
-        }
+        self.queue.pop_front().map(|rx| rx.recv().unwrap())
     }
 }
 
@@ -139,6 +133,7 @@ where
     ) -> ScopedPipeline<'scope, 'env, I, M>;
 }
 
+/// ScopedPipelineMap can be imported to add the scoped_plmap function to iterators.
 #[rustversion::since(1.63)]
 impl<'scope, 'env, I, M> ScopedPipelineMap<'scope, 'env, I, M> for I
 where

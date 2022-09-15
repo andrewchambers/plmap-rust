@@ -29,7 +29,7 @@ where
 {
     pub fn new(n_workers: usize, mapper: M, input: I) -> Pipeline<I, M> {
         let (dispatch, dispatch_rx): (
-            crossbeam_channel::Sender<(I::Item, crossbeam_channel::Sender<M::Out>)>,
+            crossbeam_channel::Sender<(_, crossbeam_channel::Sender<M::Out>)>,
             _,
         ) = crossbeam_channel::bounded(0);
         let mut workers = Vec::with_capacity(n_workers);
@@ -37,13 +37,10 @@ where
         for _ in 0..n_workers {
             let mut mapper = mapper.clone();
             let dispatch_rx = dispatch_rx.clone();
-            let handle = thread::spawn(move || loop {
-                match dispatch_rx.recv() {
-                    Ok((in_val, respond)) => {
-                        let out_val = mapper.apply(in_val);
-                        respond.send(out_val).unwrap();
-                    }
-                    Err(_) => break,
+            let handle = thread::spawn(move || {
+                while let Ok((in_val, respond)) = dispatch_rx.recv() {
+                    let out_val = mapper.apply(in_val);
+                    respond.send(out_val).unwrap();
                 }
             });
             workers.push(handle)
@@ -100,13 +97,11 @@ where
             }
         }
 
-        match self.queue.pop_front() {
-            Some(rx) => Some(rx.recv().unwrap()),
-            None => None,
-        }
+        self.queue.pop_front().map(|rx| rx.recv().unwrap())
     }
 }
 
+/// PipelineMap can be imported to add the plmap function to iterators.
 pub trait PipelineMap<I, M>
 where
     I: Iterator,
