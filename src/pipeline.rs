@@ -1,6 +1,7 @@
-use super::mapper::Mapper;
-use std::collections::VecDeque;
-use std::thread;
+use {
+    super::mapper::Mapper,
+    std::{collections::VecDeque, thread},
+};
 
 pub struct Pipeline<I, M>
 where
