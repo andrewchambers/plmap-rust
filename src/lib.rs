@@ -1,8 +1,8 @@
 //! Parallel pipelined map over iterators.
 //!
-//! This crate a plmap and scoped_plmap extension to iterators
-//! that allows easy pipelined parallelism. Because the implementation
-//! uses pipelining it preserves order, but also suffers from head of line
+//! This crate adds the plmap and scoped_plmap functions to iterators
+//! allowing easy pipelined parallelism. Because the implementation
+//! uses pipelining, it preserves order, but also suffers from head of line
 //! blocking.
 //!
 //! # Examples
