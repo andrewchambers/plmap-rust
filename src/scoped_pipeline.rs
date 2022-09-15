@@ -4,6 +4,12 @@ use {
     std::{collections::VecDeque, thread},
 };
 
+/// ScopedPipeline is a wrapper around a worker pool and implements
+/// iterator. Usually they should be created via the PipelineMap
+/// extension trait and calling plmap on an iterator.
+///
+/// ScopedPipeline differs from Pipeline in that it uses a std::thread::Scope
+/// and allows non 'static lifetimes.
 #[rustversion::since(1.63)]
 pub struct ScopedPipeline<'scope, 'env, I, M>
 where

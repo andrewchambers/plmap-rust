@@ -3,6 +3,9 @@ use {
     std::{collections::VecDeque, thread},
 };
 
+/// Pipeline is a wrapper around a worker pool and implements
+/// iterator. Usually they should be created via the PipelineMap
+/// extension trait and calling plmap on an iterator.
 pub struct Pipeline<I, M>
 where
     I: Iterator,

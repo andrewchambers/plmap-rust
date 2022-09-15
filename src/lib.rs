@@ -58,9 +58,9 @@
 //! }
 //! ```
 
-pub mod mapper;
-pub mod pipeline;
-pub mod scoped_pipeline;
+mod mapper;
+mod pipeline;
+mod scoped_pipeline;
 
 pub use mapper::*;
 pub use pipeline::*;
