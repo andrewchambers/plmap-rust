@@ -40,7 +40,6 @@ where
         mapper: M,
         input: I,
     ) -> ScopedPipeline<'scope, 'env, I, M> {
-        let n_workers = n_workers.min(1);
         let (dispatch, dispatch_rx): (
             crossbeam_channel::Sender<(_, crossbeam_channel::Sender<M::Out>)>,
             _,
