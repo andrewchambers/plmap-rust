@@ -86,7 +86,7 @@ where
             return self.input.next().map(|v| self.mapper.apply(v));
         }
 
-        while self.queue.len() < self.workers.len() {
+        while self.queue.len() <= self.workers.len() {
             match self.input.next() {
                 Some(v) => {
                     let (tx, rx) = crossbeam_channel::bounded(1);
