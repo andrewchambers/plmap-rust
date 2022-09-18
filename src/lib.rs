@@ -22,17 +22,15 @@
 //!
 //! Scoped and parallel pipelined mapping:
 //! ```
-//! #[rustversion::since(1.63)]
-//! use {std::thread, plmap::ScopedPipelineMap};
+//! use plmap::ScopedPipelineMap;
 //!
-//! #[rustversion::since(1.63)]
 //! fn example() {
-//!     thread::scope(|s| {
+//!     crossbeam_utils::thread::scope(|s| {
 //!        // Using a thread scope let's you use non 'static lifetimes.
 //!        for (i, v) in (0..100).scoped_plmap(s, 5, |x| x * 2).enumerate() {
 //!             println!("i={}", i);
 //!        }
-//!     })
+//!     }).unwrap()
 //! }
 //! ```
 //!

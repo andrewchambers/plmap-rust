@@ -1,8 +1,4 @@
-#[rustversion::since(1.63)]
-use {
-    super::mapper::Mapper,
-    std::{collections::VecDeque, thread},
-};
+use {super::mapper::Mapper, std::collections::VecDeque};
 
 /// ScopedPipeline is a wrapper around a worker pool and implements
 /// iterator. Usually they should be created via the PipelineMap
@@ -10,7 +6,6 @@ use {
 ///
 /// ScopedPipeline differs from Pipeline in that it uses a std::thread::Scope
 /// and allows non 'static lifetimes.
-#[rustversion::since(1.63)]
 pub struct ScopedPipeline<'scope, 'env, I, M>
 where
     I: Iterator,
@@ -22,11 +17,10 @@ where
     input: I,
     queue: VecDeque<crossbeam_channel::Receiver<M::Out>>,
     dispatch: crossbeam_channel::Sender<(I::Item, crossbeam_channel::Sender<M::Out>)>,
-    _worker_scope: &'scope thread::Scope<'scope, 'env>,
-    workers: Vec<thread::ScopedJoinHandle<'scope, ()>>,
+    _worker_scope: &'scope crossbeam_utils::thread::Scope<'env>,
+    workers: Vec<crossbeam_utils::thread::ScopedJoinHandle<'scope, ()>>,
 }
 
-#[rustversion::since(1.63)]
 impl<'scope, 'env, I, M> ScopedPipeline<'scope, 'env, I, M>
 where
     I: Iterator,
@@ -35,7 +29,7 @@ where
     M::Out: Send + 'env,
 {
     pub fn new(
-        worker_scope: &'scope thread::Scope<'scope, 'env>,
+        worker_scope: &'scope crossbeam_utils::thread::Scope<'env>,
         n_workers: usize,
         mapper: M,
         input: I,
@@ -49,7 +43,7 @@ where
         for _ in 0..n_workers {
             let mut mapper = mapper.clone();
             let dispatch_rx = dispatch_rx.clone();
-            let handle = worker_scope.spawn(move || {
+            let handle = worker_scope.spawn(move |_| {
                 while let Ok((in_val, respond)) = dispatch_rx.recv() {
                     let out_val = mapper.apply(in_val);
                     respond.send(out_val).unwrap();
@@ -69,7 +63,6 @@ where
     }
 }
 
-#[rustversion::since(1.63)]
 impl<'scope, 'env, I, M> Drop for ScopedPipeline<'scope, 'env, I, M>
 where
     I: Iterator,
@@ -86,7 +79,6 @@ where
     }
 }
 
-#[rustversion::since(1.63)]
 impl<'scope, 'env, I, M> Iterator for ScopedPipeline<'scope, 'env, I, M>
 where
     I: Iterator,
@@ -117,7 +109,6 @@ where
 }
 
 /// ScopedPipelineMap can be imported to add the scoped_plmap function to iterators.
-#[rustversion::since(1.63)]
 pub trait ScopedPipelineMap<'scope, 'env, I, M>
 where
     I: Iterator,
@@ -127,13 +118,12 @@ where
 {
     fn scoped_plmap(
         self,
-        worker_scope: &'scope thread::Scope<'scope, 'env>,
+        worker_scope: &'scope crossbeam_utils::thread::Scope<'env>,
         n_workers: usize,
         m: M,
     ) -> ScopedPipeline<'scope, 'env, I, M>;
 }
 
-#[rustversion::since(1.63)]
 impl<'scope, 'env, I, M> ScopedPipelineMap<'scope, 'env, I, M> for I
 where
     I: Iterator,
@@ -143,7 +133,7 @@ where
 {
     fn scoped_plmap(
         self,
-        worker_scope: &'scope thread::Scope<'scope, 'env>,
+        worker_scope: &'scope crossbeam_utils::thread::Scope<'env>,
         n_workers: usize,
         m: M,
     ) -> ScopedPipeline<'scope, 'env, I, M> {
@@ -151,14 +141,13 @@ where
     }
 }
 
-#[rustversion::since(1.63)]
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn test_scoped_parallel_pipeline() {
-        thread::scope(|s| {
+        crossbeam_utils::thread::scope(|s| {
             for w in 0..3 {
                 for (i, v) in (0..100).scoped_plmap(s, w, |x| x * 2).enumerate() {
                     let i = i as i32;
@@ -167,5 +156,6 @@ mod tests {
                 assert_eq!((0..100).scoped_plmap(s, w, |x| x * 2).count(), 100);
             }
         })
+        .unwrap()
     }
 }
