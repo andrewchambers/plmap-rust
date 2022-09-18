@@ -51,7 +51,7 @@ where
             input,
             dispatch,
             workers,
-            queue: VecDeque::with_capacity(n_workers),
+            queue: VecDeque::with_capacity(n_workers + 1),
         }
     }
 }
@@ -86,7 +86,7 @@ where
             return self.input.next().map(|v| self.mapper.apply(v));
         }
 
-        while self.queue.len() <= self.workers.len() {
+        while self.queue.len() < self.workers.len() + 1 {
             match self.input.next() {
                 Some(v) => {
                     let (tx, rx) = crossbeam_channel::bounded(1);
